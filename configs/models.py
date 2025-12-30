@@ -1,5 +1,7 @@
 import os
 
+from dotenv import load_dotenv
+
 
 PARENT_DIR = 'training/fine_tuned_models'
 
@@ -9,9 +11,10 @@ PLAYER_BALL_DETECTION_MODEL_PATH = os.path.join(
 PITCH_DETECTION_MODEL_PATH = os.path.join(
     PARENT_DIR, 'pitch_detection_model.pt')
 
-PLAYER_BALL_DETECTION_MODEL_ID = 'football-players-detection-3zvbc/20'
-PITCH_DETECTION_MODEL_ID = 'football-field-detection-f07vi/15'
-API_KEY = 'UquXLB1d8JCnXwQVTnKN'
+load_dotenv()
+PLAYER_BALL_DETECTION_MODEL_ID = os.getenv('PLAYER_BALL_DETECTION_MODEL_ID')
+PITCH_DETECTION_MODEL_ID = os.getenv('PITCH_DETECTION_MODEL_ID')
+API_KEY = os.getenv('API_KEY')
 
 BALL_CLASS_ID = 0
 GOALKEEPER_CLASS_ID = 1
