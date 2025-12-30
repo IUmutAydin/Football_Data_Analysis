@@ -1,0 +1,10 @@
+runs/
+training/fine_tuned_models/
+training/football-field-detection-1/
+training/football-players-detection-1/
+training/runs/
+videos/
+
+*.mp4
+*.jpg
+*.pt
