@@ -21,8 +21,6 @@ from configs.models import (
 )
 from utils.video_utils import collect_videos
 
-STRIDE = 60
-
 COLORS = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
 
 ELLIPSE_ANNOTATOR = sv.EllipseAnnotator(
@@ -60,7 +58,7 @@ class FootballAnalysisPip():
             model_id=PITCH_DETECTION_MODEL_ID, api_key=API_KEY)
         self.tracker = sv.ByteTrack()
         self.team_classifier = get_team_classifier(
-            source_video_path, self.player_ball_detection_model, PLAYER_CLASS_ID, STRIDE, device)
+            source_video_path, self.player_ball_detection_model, PLAYER_CLASS_ID, device=device)
         self.ball_tracker = BallTracker(buffer_size=5)
         self.ball_annotator = BallAnnotator(
             sv.Color.from_hex(COLORS[2]).as_bgr())
