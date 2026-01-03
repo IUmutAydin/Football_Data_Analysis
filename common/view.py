@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
-from annotators.football import draw_pitch, draw_points_on_pitch
-from configs.football import SoccerPitchConfiguration
 import supervision as sv
 
+from annotators.football import draw_pitch, draw_points_on_pitch
+from configs.football import SoccerPitchConfiguration
 
 CONFIG = SoccerPitchConfiguration()
 

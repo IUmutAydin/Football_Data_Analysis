@@ -4,6 +4,7 @@ training/football-field-detection-1/
 training/football-players-detection-1/
 training/runs/
 videos/
+**/__pycache__/
 
 *.mp4
 *.jpg

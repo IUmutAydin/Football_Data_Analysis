@@ -1,15 +1,10 @@
-from typing import Generator, Iterable, List, TypeVar
 
 import numpy as np
 import supervision as sv
-from sympy import use
 import torch
 import umap
 from sklearn.cluster import KMeans
-from tqdm import tqdm
 from transformers import AutoProcessor, SiglipVisionModel
-
-V = TypeVar("V")
 
 SIGLIP_MODEL_PATH = 'google/siglip-base-patch16-224'
 

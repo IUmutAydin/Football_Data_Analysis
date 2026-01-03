@@ -2,7 +2,6 @@ import os
 
 from dotenv import load_dotenv
 
-
 PARENT_DIR = 'training/fine_tuned_models'
 
 PLAYER_BALL_DETECTION_MODEL_PATH = os.path.join(

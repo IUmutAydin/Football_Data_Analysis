@@ -1,20 +1,25 @@
 import os
-import pickle
+
 import cv2
-from inference import get_model
 import numpy as np
-import tqdm
-from ultralytics import YOLO
 import supervision as sv
-from annotators.football import draw_pitch, draw_points_on_pitch
+import tqdm
+from inference import get_model
+
 from common.ball import BallAnnotator, BallTracker
 from common.data import SpeedEstimator
 from common.team import get_crops, get_team_classifier, resolve_goalkeeper_team
 from common.view import CONFIG, ViewTransformer, render_radar
-from configs.football import SoccerPitchConfiguration
-from configs.models import API_KEY, BALL_CLASS_ID, GOALKEEPER_CLASS_ID, PITCH_DETECTION_MODEL_ID, PLAYER_BALL_DETECTION_MODEL_ID, PLAYER_BALL_DETECTION_MODEL_PATH, PLAYER_CLASS_ID, REFEREE_CLASS_ID
+from configs.models import (
+    API_KEY,
+    BALL_CLASS_ID,
+    GOALKEEPER_CLASS_ID,
+    PITCH_DETECTION_MODEL_ID,
+    PLAYER_BALL_DETECTION_MODEL_ID,
+    PLAYER_CLASS_ID,
+    REFEREE_CLASS_ID,
+)
 from utils.video_utils import collect_videos
-
 
 STRIDE = 60
 
@@ -54,7 +59,7 @@ class FootballAnalysisPip():
         self.pitch_detection_model = get_model(
             model_id=PITCH_DETECTION_MODEL_ID, api_key=API_KEY)
         self.tracker = sv.ByteTrack()
-        self.team_classifier = team_classifier = get_team_classifier(
+        self.team_classifier = get_team_classifier(
             source_video_path, self.player_ball_detection_model, PLAYER_CLASS_ID, STRIDE, device)
         self.ball_tracker = BallTracker(buffer_size=5)
         self.ball_annotator = BallAnnotator(
@@ -233,185 +238,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-
-
-# def detect(source_video_path, device='cpu', read_from_stub=True, stub_path='stubs/detects.pckl', video=None):
-#     frame_data_dict = {}
-
-#     if stub_path is not None and os.path.exists(stub_path):
-#         with open(stub_path, 'rb') as f:
-#             if os.path.getsize(stub_path) > 0:
-#                 frame_data_dict = pickle.load(f)
-#         if read_from_stub and video is not None and video in frame_data_dict.keys():
-#             data_dict = frame_data_dict[video]
-#             return data_dict['frame_data'], data_dict['ball_positions']
-
-#     player_ball_detection_model = get_model(
-#         model_id=PLAYER_BALL_DETECTION_MODEL_ID, api_key=API_KEY)
-#     pitch_detection_model = get_model(
-#         model_id=PITCH_DETECTION_MODEL_ID, api_key=API_KEY)
-
-#     frame_generator = sv.get_video_frames_generator(source_video_path)
-
-#     tracker = sv.ByteTrack()
-#     team_classifier = get_team_classifier(
-#         source_video_path, player_ball_detection_model, PLAYER_CLASS_ID, STRIDE, device)
-#     ball_tracker = BallTracker(buffer_size=5)
-
-#     frame_data = []
-
-#     for frame_num, frame in tqdm.tqdm(enumerate(frame_generator), desc='Extracting datas'):
-#         results = pitch_detection_model.infer(frame)[0]
-#         keypoints = sv.KeyPoints.from_inference(results)
-
-#         results = player_ball_detection_model.infer(frame, imgsz=1280)[0]
-#         detections = sv.Detections.from_inference(results)
-
-#         track_mask = np.isin(detections.class_id, [
-#                              PLAYER_CLASS_ID, GOALKEEPER_CLASS_ID])
-#         all_players = tracker.update_with_detections(detections[track_mask])
-
-#         players = all_players[all_players.class_id == PLAYER_CLASS_ID]
-#         player_team_ids = team_classifier.predict(get_crops(frame, players))
-
-#         goalkeepers = all_players[all_players.class_id == GOALKEEPER_CLASS_ID]
-#         goalkeeper_team_ids = resolve_goalkeeper_team(
-#             goalkeepers, players, player_team_ids)
-
-#         referees = detections[detections.class_id == REFEREE_CLASS_ID]
-#         referees.tracker_id = np.array([None] * len(referees))
-
-#         ball = detections[detections.class_id == BALL_CLASS_ID]
-#         ball_tracker.update(ball)
-
-#         frame_data.append({
-#             'players': players,
-#             'goalkeepers': goalkeepers,
-#             'referees': referees,
-#             'player_team_ids': player_team_ids,
-#             'goalkeeper_team_ids': goalkeeper_team_ids,
-#             'keypoints': keypoints
-#         })
-
-#     ball_positions = ball_tracker.get_ball_coordinates()
-
-#     if stub_path is not None and video is not None:
-#         frame_data_dict[video] = {
-#             'frame_data': frame_data,
-#             'ball_positions': ball_positions
-#         }
-#         with open(stub_path, 'wb') as f:
-#             pickle.dump(frame_data_dict, f)
-
-#     return frame_data, ball_positions
-
-
-# def annotate(source_video_path, frame_data, ball_positions):
-#     frame_generator = sv.get_video_frames_generator(source_video_path)
-
-#     ball_annotator = BallAnnotator(sv.Color.from_hex(COLORS[2]).as_bgr())
-
-#     for frame_num, frame in tqdm.tqdm(enumerate(frame_generator), desc='Annotating frames'):
-#         data = frame_data[frame_num]
-
-#         detections = sv.Detections.merge(
-#             [data['players'], data['goalkeepers'], data['referees']])
-
-#         color_lookup = np.array(
-#             data['player_team_ids'].tolist() +
-#             data['goalkeeper_team_ids'].tolist() +
-#             [REFEREE_CLASS_ID] * len(data['referees']))
-
-#         labels = [str(
-#             tracker_id) if tracker_id else 'Referee' for tracker_id in detections.tracker_id]
-
-#         annotated_frame = frame.copy()
-#         annotated_frame = ELLIPSE_ANNOTATOR.annotate(
-#             annotated_frame, detections, custom_color_lookup=color_lookup)
-#         annotated_frame = ELLIPSE_LABEL_ANNOTATOR.annotate(
-#             annotated_frame, detections, labels, custom_color_lookup=color_lookup)
-#         annotated_frame = ball_annotator.annotate(
-#             annotated_frame, ball_positions[frame_num])
-
-#         h, w, _ = frame.shape
-
-#         radar = render_radar(
-#             data, ball_positions[frame_num], color_lookup, COLORS)
-#         radar = cv2.resize(radar, (w // 2, h // 2))
-
-#         radar_h, radar_w, _ = radar.shape
-
-#         rect = sv.Rect(0, 0, radar_w, radar_h)
-
-#         annotated_frame = sv.draw_image(
-#             scene=annotated_frame, image=radar, opacity=0.5, rect=rect)
-
-#         yield annotated_frame
-
-
-# def run_model(source_video_path, target_video_path, device='cpu', read_from_stub=True, video=None):
-#     frame_data, ball_positions = detect(
-#         source_video_path, device, read_from_stub, video=video)
-
-#     frame_generator = annotate(source_video_path, frame_data, ball_positions)
-
-#     video_info = sv.VideoInfo.from_video_path(source_video_path)
-#     with sv.VideoSink(target_video_path, video_info) as sink:
-#         for frame in frame_generator:
-#             sink.write_frame(frame)
-
-
-# def process_videos(video_names):
-#     OUTPUT_VIDEOS_DIR = 'videos/output_videos'
-
-#     videos = collect_videos()
-#     for video_name in video_names:
-#         source_video_path = videos[video_name]
-#         output_video_path = os.path.join(
-#             OUTPUT_VIDEOS_DIR, f'{video_name}.mp4')
-#         run_model(source_video_path, output_video_path,
-#                   'cuda', False, video_name)
-
-
-# def main() -> None:
-#     process_videos(['08fd33_4'])
-
-
-# if __name__ == '__main__':
-#     main()
-
-
-# def run_pitch_detection(source_video_path: str, device: str):
-#     VERTEX_LABEL_ANNOTATOR = sv.VertexLabelAnnotator(
-#         color=[sv.Color.from_hex(color) for color in CONFIG.colors],
-#         text_color=sv.Color.from_hex('#FFFFFF'),
-#         border_radius=5,
-#         text_thickness=1,
-#         text_scale=0.5,
-#         text_padding=5,
-#     )
-
-#     pitch_detection_model = get_model(
-#         model_id=PITCH_DETECTION_MODEL_ID, api_key=API_KEY)
-#     frame_generator = sv.get_video_frames_generator(
-#         source_path=source_video_path)
-
-#     for frame in frame_generator:
-#         result = pitch_detection_model.infer(frame)[0]
-#         keypoints = sv.KeyPoints.from_inference(result)
-
-#         confidences = keypoints.confidence[0] if keypoints.confidence is not None else [
-#         ]
-
-#         custom_labels = []
-#         for i, name in enumerate(CONFIG.labels):
-#             if i < len(confidences):
-#                 conf = confidences[i]
-#                 custom_labels.append(f"{name} {conf:.2f}")
-#             else:
-#                 custom_labels.append(name)
-
-#         annotated_frame = frame.copy()
-#         annotated_frame = VERTEX_LABEL_ANNOTATOR.annotate(
-#             annotated_frame, keypoints, custom_labels)
-#         yield annotated_frame
