@@ -6,8 +6,9 @@ import supervision as sv
 import tqdm
 from inference import get_model
 
+from annotators.football import draw_ball_possession
 from common.ball import BallAnnotator, BallTracker
-from common.data import SpeedEstimator
+from common.data import BallTerritory, SpeedEstimator
 from common.team import get_crops, get_team_classifier, resolve_goalkeeper_team
 from common.view import CONFIG, ViewTransformer, render_radar
 from configs.models import (
@@ -45,6 +46,13 @@ SPEED_LABEL_ANNOTATOR = sv.LabelAnnotator(
     border_radius=5
 )
 
+HAS_BALL_ANNOTATOR = sv.TriangleAnnotator(
+    base=12,
+    height=10,
+    color=sv.Color.YELLOW,
+    position=sv.Position.TOP_CENTER
+)
+
 
 class FootballAnalysisPip():
     def __init__(self, source_video_path, device):
@@ -59,11 +67,12 @@ class FootballAnalysisPip():
         self.tracker = sv.ByteTrack()
         self.team_classifier = get_team_classifier(
             source_video_path, self.player_ball_detection_model, PLAYER_CLASS_ID, device=device)
-        self.ball_tracker = BallTracker(buffer_size=5)
+        self.ball_tracker = BallTracker()
         self.ball_annotator = BallAnnotator(
             sv.Color.from_hex(COLORS[2]).as_bgr())
         self.speed_estimator = SpeedEstimator(
             sv.VideoInfo.from_video_path(source_video_path).fps, 8)
+        self.ball_territory = BallTerritory()
 
     def process_frame(self, frame):
         # Model results
@@ -182,14 +191,28 @@ class FootballAnalysisPip():
                 annotated_frame, detections, custom_color_lookup=color_lookup)
             annotated_frame = ELLIPSE_LABEL_ANNOTATOR.annotate(
                 annotated_frame, detections, labels, custom_color_lookup=color_lookup)
-            annotated_frame = self.ball_annotator.annotate(
-                annotated_frame, data['ball_position'])
 
             # Speed estimation and annotation
             speed_labels = self.estimate_speed(data)
 
+            annotated_frame = self.ball_annotator.annotate(
+                annotated_frame, data['ball_position'], data['ball_speed'])
+
             annotated_frame = SPEED_LABEL_ANNOTATOR.annotate(
                 annotated_frame, data['players'], speed_labels)
+
+            # Ball territory annotation
+            player_id = self.ball_territory.assign_player_to_ball(
+                data['players'].tracker_id, data['player_team_ids'], data['player_pitch_xy'], data['ball_pitch_xy'])
+
+            if player_id != -1:
+                mask = data['players'].tracker_id == player_id
+                annotated_frame = HAS_BALL_ANNOTATOR.annotate(
+                    annotated_frame, data['players'][mask])
+
+            if self.ball_territory.team_ball_control:
+                annotated_frame = draw_ball_possession(
+                    annotated_frame, self.ball_territory.team_ball_control, [sv.Color.from_hex(COLORS[0]), sv.Color.from_hex(COLORS[1])])
 
             # Drawing radar with transformed points
             h, w, _ = frame.shape

@@ -9,7 +9,7 @@ class BallAnnotator():
     def __init__(self, color):
         self.color = color
 
-    def annotate(self, frame, detection):
+    def annotate(self, frame, detection, ball_speed=None):
         if np.isnan(detection).any():
             return frame
 
@@ -26,6 +26,23 @@ class BallAnnotator():
         cv2.drawContours(frame, [triangle_points], 0,
                          self.color, thickness=cv2.FILLED)
         cv2.drawContours(frame, [triangle_points], 0, (0, 0, 0), thickness=2)
+
+        if ball_speed is not None:
+            label = f"{ball_speed:.1f} km/h"
+
+            (text_w, text_h), _ = cv2.getTextSize(
+                label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+
+            rect_x1, rect_y1 = x + 10, y - 25
+            rect_x2, rect_y2 = rect_x1 + text_w + 10, rect_y1 - text_h - 10
+
+            overlay = frame.copy()
+            cv2.rectangle(overlay, (rect_x1, rect_y1),
+                          (rect_x2, rect_y2), (0, 0, 0), -1)
+            cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
+
+            cv2.putText(frame, label, (rect_x1 + 5, rect_y1 - 7),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         return frame
 
@@ -77,37 +94,3 @@ class BallTracker():
         self.buffer.append(np.array([final_x, final_y]))
 
         return np.array([final_x, final_y])
-
-
-# class BallTracker():
-#     def __init__(self, buffer_size=5):
-#         self.buffer = deque(maxlen=buffer_size)
-#         self.ball_coordinates = list()
-
-#     def update(self, detections: sv.Detections):
-#         if len(detections) == 0:
-#             self.ball_coordinates.append(np.array([np.nan, np.nan]))
-#             return
-
-#         xy = detections.get_anchors_coordinates(sv.Position.CENTER)
-#         if self.buffer:
-#             centroid = np.mean(np.array(self.buffer), axis=0)
-#             distances = np.linalg.norm(xy - centroid, axis=1)
-
-#             index = np.argmin(distances)
-#         else:
-#             index = np.argmax(detections.confidence)
-
-#         self.buffer.append(xy[index])
-#         self.ball_coordinates.append(xy[index])
-
-#     def get_ball_coordinates(self):
-#         df_ball_positions = pd.DataFrame(
-#             self.ball_coordinates, columns=['x', 'y'])
-
-#         df_ball_positions = df_ball_positions.interpolate()
-#         df_ball_positions = df_ball_positions.bfill()
-
-#         ball_positions = df_ball_positions.to_numpy()
-
-#         return self.ball_coordinates

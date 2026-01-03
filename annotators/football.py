@@ -1,7 +1,9 @@
-from typing import Optional, List
+from typing import List, Optional
+
 import cv2
-import supervision as sv
 import numpy as np
+import supervision as sv
+
 from configs.football import SoccerPitchConfiguration
 
 
@@ -151,3 +153,33 @@ def draw_paths_on_pitch(
             )
 
         return pitch
+
+
+def draw_ball_possession(frame, team_ball_control, team_colors):
+    H, W = frame.shape[:2]
+    p1 = (int(W - 670), int(H - 240))
+    p2 = (int(W - 20), int(H - 120))
+
+    overlay = frame.copy()
+    cv2.rectangle(overlay, p1, p2, (255, 255, 255), -1)
+    alpha = 0.4
+    cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
+    team_ball_control = np.array(team_ball_control)
+
+    team1_ball_control = team_ball_control[team_ball_control == 0].shape[0]
+    team2_ball_control = team_ball_control[team_ball_control == 1].shape[0]
+
+    team1_possesion = (team1_ball_control /
+                       (team1_ball_control + team2_ball_control)) * 100
+    team2_possesion = (team2_ball_control /
+                       (team1_ball_control + team2_ball_control)) * 100
+
+    text_p = (p1[0] + 50, p1[1] + 50)
+
+    cv2.putText(frame, f'Team 1 Ball Control {team1_possesion:.2f}', text_p, cv2.FONT_HERSHEY_SIMPLEX,
+                1, team_colors[0].as_bgr(), 3)
+    cv2.putText(frame, f'Team 2 Ball Control {team2_possesion:.2f}', (text_p[0], text_p[1] + 50), cv2.FONT_HERSHEY_SIMPLEX,
+                1, team_colors[1].as_bgr(), 3)
+
+    return frame
