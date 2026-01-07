@@ -71,7 +71,7 @@ class FootballAnalysisPip():
         self.ball_annotator = BallAnnotator(
             sv.Color.from_hex(COLORS[2]).as_bgr())
         self.speed_estimator = SpeedEstimator(
-            sv.VideoInfo.from_video_path(source_video_path).fps, 8)
+            sv.VideoInfo.from_video_path(source_video_path).fps)
         self.ball_territory = BallTerritory()
 
     def process_frame(self, frame):
