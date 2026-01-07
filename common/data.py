@@ -2,10 +2,8 @@ import numpy as np
 
 
 class SpeedEstimator():
-    def __init__(self, fps, window_size=8, alpha=0.1):
+    def __init__(self, fps, alpha=0.1):
         self.fps = fps
-        print(f'FPS: {self.fps}')
-        self.window_size = window_size
         self.alpha = alpha
         self.tracker_data = {}
         self.ball_data = {'last_pos': None,

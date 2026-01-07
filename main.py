@@ -47,8 +47,8 @@ SPEED_LABEL_ANNOTATOR = sv.LabelAnnotator(
 )
 
 HAS_BALL_ANNOTATOR = sv.TriangleAnnotator(
-    base=12,
-    height=10,
+    base=24,
+    height=20,
     color=sv.Color.YELLOW,
     position=sv.Position.TOP_CENTER
 )
@@ -145,8 +145,7 @@ class FootballAnalysisPip():
             'ball_pitch_xy': ball_pitch_xy,
             'player_pixel_xy': player_pixel_xy,
             'referee_pixel_xy': referee_pixel_xy,
-            'ball_pixel_xy': ball_position,
-            'keypoints': keypoints
+            'ball_pixel_xy': ball_position
         }
 
     def estimate_speed(self, data):

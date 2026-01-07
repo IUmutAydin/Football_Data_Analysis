@@ -84,8 +84,8 @@ class BallTracker():
         best_detection_x = xy[index][0]
         best_detection_y = xy[index][1]
 
-        measurement = np.array([[np.float32(best_detection_x)],
-                                [np.float32(best_detection_y)]])
+        measurement = np.array(
+            [[best_detection_x], [best_detection_y]], dtype=np.float32)
         corrected = self.kf.correct(measurement)
 
         final_x = int(corrected[0])
