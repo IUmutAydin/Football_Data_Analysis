@@ -47,8 +47,8 @@ SPEED_LABEL_ANNOTATOR = sv.LabelAnnotator(
 )
 
 HAS_BALL_ANNOTATOR = sv.TriangleAnnotator(
-    base=24,
-    height=20,
+    base=72,
+    height=60,
     color=sv.Color.YELLOW,
     position=sv.Position.TOP_CENTER
 )
@@ -253,7 +253,7 @@ def process_videos(video_names):
 
 
 def main() -> None:
-    process_videos(['08fd33_4'])
+    process_videos(['Clip_06'])
 
 
 if __name__ == '__main__':

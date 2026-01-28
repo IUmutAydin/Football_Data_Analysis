@@ -64,7 +64,7 @@ class SpeedEstimator():
 
 class BallTerritory():
     def __init__(self):
-        self.max_player_ball_distance = 70
+        self.max_player_ball_distance = 200
         self.team_ball_control = []
         self.player_ids = []
 
