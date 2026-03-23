@@ -1,0 +1,11 @@
+opencv-python
+numpy
+supervision
+inference
+ultralytics
+torch
+transformers
+umap-learn
+scikit-learn
+python-dotenv
+tqdm
